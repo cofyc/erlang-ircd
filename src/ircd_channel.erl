@@ -19,8 +19,7 @@
 -record(state, {name, members}).
 
 start_link(Args) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, Args,
-			  []).
+    gen_server:start_link(?MODULE, Args, []).
 
 init([Name]) ->
     error_logger:info_msg("Channel ~p created.~n", [Name]),
@@ -38,7 +37,7 @@ handle_call({join, Nick, Pid}, _Caller,
     {reply, ok, NewState};
 handle_call({privmsg, Nick, Text}, _Caller,
 	    State = #state{}) ->
-    ok = broadcast(State, {privmsg, Nick, Text}),
+    ok = broadcast(State, Nick, {privmsg, Nick, Text}),
     {reply, ok, State};
 handle_call({part, Nick}, _Caller,
 	    State = #state{members = Members}) ->
@@ -66,11 +65,23 @@ code_change(_OldVersion, State, _Extra) -> {ok, State}.
 
 %%% Private functions
 
+%% broadcast/2
+
 broadcast(#state{name = Name, members = Members},
 	  Event) ->
     Message = {channel_event, Name, Event},
     error_logger:info_msg("[~p] broadcast message: ~p~n",
 			  [Name, Message]),
-    [begin gen_server:cast(Pid, Message) end
+    [gen_server:cast(Pid, Message)
      || #member{pid = Pid} <- Members],
+    ok.
+
+%% broadcast/3
+broadcast(#state{name = Name, members = Members}, Nick,
+	  Event) ->
+    Message = {channel_event, Name, Event},
+    error_logger:info_msg("[~p] broadcast message: ~p~n",
+			  [Name, Message]),
+    [gen_server:cast(Pid, Message)
+     || #member{pid = Pid, nick = N} <- Members, N =/= Nick],
     ok.
