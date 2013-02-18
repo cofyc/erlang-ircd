@@ -1,0 +1,138 @@
+%%
+%% IRCd client agent.
+%%
+%% Each client is handled by a separate agent process.
+%%
+
+-module(ircd_agent).
+
+-behavior(gen_server).
+
+-include("ircd.hrl").
+
+%% gen_server callbacks
+-export([code_change/3, handle_call/3, handle_cast/2,
+	 handle_info/2, init/1, terminate/2]).
+
+%% gen_server state
+-record(state, {sock, nick, user}).
+
+init([Sock]) -> {ok, #state{sock = Sock}}.
+
+handle_cast({channel_event, Name, {join, Nick}},
+	    State = #state{sock = Sock}) ->
+    internal_send(Sock,
+		  #irc_message{prefix = Nick, command = "JOIN",
+			       params = [], trailing = Name}),
+    {noreply, State};
+handle_cast({channel_event, Name,
+	     {privmsg, Nick, Text}},
+	    State = #state{sock = Sock}) ->
+    internal_send(Sock,
+		  #irc_message{prefix = Nick, command = "PRIVMSG",
+			       params = [Name], trailing = Text}),
+    {noreply, State};
+handle_cast(_Msg, State) -> {noreply, State}.
+
+handle_call(_Msg, _Caller, State) -> {noreply, State}.
+
+handle_info({tcp, Sock, Line},
+	    State = #state{sock = Sock}) ->
+    io:format("INPUT: ~p~n", [Line]),
+    try handle_irc_message(ircd_protocol:parse(Line), State)
+    catch
+      Reason ->
+	  io:format("error: ~p~n", [Reason]), {noreply, State}
+    end;
+handle_info(_Msg, State) -> {noreply, State}.
+
+terminate(_Reason, _State) -> ok.
+
+code_change(_OldVersion, State, _Extra) -> {ok, State}.
+
+%%% Private functions
+
+handle_irc_message(#irc_message{command = "NICK",
+				params = [Nick]},
+		   State) ->
+    {noreply,
+     call_system1(maybe_login(State#state{nick = Nick}),
+		  nick_change, [Nick])};
+handle_irc_message(#irc_message{command = "USER",
+				params = [U, H, S], trailing = R},
+		   State) ->
+    User = #irc_user{username = U, hostname = H,
+		     servername = S, realname = R},
+    {noreply, maybe_login(State#state{user = User})};
+handle_irc_message(#irc_message{command = "QUIT"},
+		   State) ->
+    {stop, normal, disconnect(State)};
+handle_irc_message(#irc_message{command = "JOIN",
+				params = [ChannelString | MaybeKeys]},
+		   State = #state{nick = Nick, sock = Sock}) ->
+    Channels = string:tokens(ChannelString, ","),
+    Keys = case MaybeKeys of
+	     [_Keys] -> string:tokens(_Keys, ",");
+	     _ -> []
+	   end,
+    {ChannelInfos, NewState} = call_system(State, join,
+					   [Channels, Keys]),
+    [begin
+       internal_send(Sock,
+		     ircd_protocol:reply('RPL_NAMREPLY', Nick,
+					 [Channel, Names])),
+       internal_send(Sock,
+		     ircd_protocol:reply('RPL_ENDOFNAMES', Nick, [Channel])),
+       internal_send(Sock,
+		     ircd_protocol:reply('RPL_TOPIC', Nick,
+					 [Channel, Topic]))
+     end
+     || {Channel, Names, Topic} <- ChannelInfos],
+    {noreply, NewState};
+handle_irc_message(#irc_message{command = "PRIVMSG",
+				params = [Targets], trailing = Text},
+		   State) ->
+    {noreply,
+     call_system1(State, privmsg,
+		  [string:tokens(Targets, ","), Text])};
+handle_irc_message(Msg, State) ->
+    error_logger:info_report({ignored_message, Msg}),
+    {noreply, State}.
+
+disconnect(State = #state{sock = Sock}) ->
+    case Sock of
+      undefined -> ok;
+      _ -> gen_tcp:close(Sock)
+    end,
+    State.
+
+call_system(State = #state{}, Command, Args) ->
+    case gen_server:call(ircd_system, {Command, Args}) of
+      {error, Reason} -> throw(Reason);
+      Response -> {Response, State}
+    end.
+
+call_system1(State = #state{}, Command, Args) ->
+    {_, State} = call_system(State, Command, Args), State.
+
+maybe_login(State = #state{nick = N, user = U})
+    when N =/= undefined andalso U =/= undefined ->
+    send_motd(State),
+    {_, State} = call_system(State, login, [N, U]),
+    State;
+maybe_login(State) -> State.
+
+send_motd(State = #state{}) ->
+    reply(State, 'RPL_MOTDSTART',
+	  ["IRCd Server by Cofyc."]),
+    reply(State, 'RPL_MOTD',
+	  ["A irc server written in erlang."]),
+    reply(State, 'RPL_ENDOFMOTD', []),
+    ok.
+
+reply(#state{sock = Sock, nick = Nick}, Type, Params) ->
+    internal_send(Sock,
+		  ircd_protocol:reply(Type, Nick, Params)).
+
+internal_send(Sock, Message) ->
+    gen_tcp:send(Sock, ircd_protocol:compose(Message)), ok.
