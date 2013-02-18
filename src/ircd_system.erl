@@ -8,37 +8,29 @@
 -export([start_link/0]).
 
 %% gen_server callbacks
--export([code_change/3, handle_call/3, handle_cast/2,
-	 handle_info/2, init/1, terminate/2]).
+-export([code_change/3, handle_call/3, handle_cast/2, handle_info/2, init/1,
+	 terminate/2]).
 
 %% gen_server state
 -record(state, {agents}).
 
 -record(agent, {nick, user}).
 
-start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [],
-			  []).
+start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-    ircd_channels = ets:new(ircd_channels,
-			    [set, named_table]),
-    {ok,
-     #state{agents = ets:new(agents, [set, named_table])}}.
+    ircd_channels = ets:new(ircd_channels, [set, named_table]),
+    {ok, #state{agents = ets:new(agents, [set, named_table])}}.
 
 handle_cast(_Msg, State) -> {noreply, State}.
 
-handle_call({login, [Nick, User]},
-	    {AgentPid, _AgentRef},
+handle_call({login, [Nick, User]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
-    ets:insert(Agents,
-	       {AgentPid, #agent{nick = Nick, user = User}}),
+    ets:insert(Agents, {AgentPid, #agent{nick = Nick, user = User}}),
     {reply, ok, State#state{agents = Agents}};
-handle_call({nick_change, [Nick]}, _Caller,
-	    State = #state{}) ->
+handle_call({nick_change, [Nick]}, _Caller, State = #state{}) ->
     {reply, Nick, State};
-handle_call({join, [Channels, _Keys]},
-	    {AgentPid, _AgentRef},
+handle_call({join, [Channels, _Keys]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
     case ets:lookup(Agents, AgentPid) of
       [{AgentPid, #agent{nick = Nick, user = _User}}] ->
@@ -46,15 +38,14 @@ handle_call({join, [Channels, _Keys]},
 	   [begin
 	      Pid = get_channel(Channel),
 	      gen_server:call(Pid, {join, Nick, AgentPid}),
-          {_, Nicks} = gen_server:call(Pid, info),
+	      {_, Nicks} = gen_server:call(Pid, info),
 	      {Channel, Nicks, "Topics not yet supported"}
 	    end
 	    || Channel <- Channels],
 	   State};
       [] -> {reply, {error, exception}, State}
     end;
-handle_call({privmsg, [Channels, Text]},
-	    {AgentPid, _AgentRef},
+handle_call({privmsg, [Channels, Text]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
     case ets:lookup(Agents, AgentPid) of
       [{AgentPid, #agent{nick = Nick, user = _User}}] ->
@@ -66,21 +57,18 @@ handle_call({privmsg, [Channels, Text]},
 	  {reply, ok, State};
       [] -> {reply, {error, exception}, State}
     end;
-handle_call({part, [Channels]},
-	    {AgentPid, _AgentRef},
+handle_call({part, [Channels]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
     case ets:lookup(Agents, AgentPid) of
       [{AgentPid, #agent{nick = Nick, user = _User}}] ->
 	  [begin
-	     Pid = get_channel(Channel),
-	     gen_server:call(Pid, {part, Nick})
+	     Pid = get_channel(Channel), gen_server:call(Pid, {part, Nick})
 	   end
 	   || Channel <- Channels, is_channel_name(Channel)],
 	  {reply, ok, State};
       [] -> {reply, {error, exception}, State}
     end;
-handle_call(_Msg, _Caller, State) ->
-    {reply, {error, ignored_call}, State}.
+handle_call(_Msg, _Caller, State) -> {reply, {error, ignored_call}, State}.
 
 handle_info(_Msg, State) -> {noreply, State}.
 

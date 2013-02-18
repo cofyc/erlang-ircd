@@ -11,8 +11,8 @@
 -include("ircd.hrl").
 
 %% gen_server callbacks
--export([code_change/3, handle_call/3, handle_cast/2,
-	 handle_info/2, init/1, terminate/2]).
+-export([code_change/3, handle_call/3, handle_cast/2, handle_info/2, init/1,
+	 terminate/2]).
 
 %% gen_server state
 -record(state, {sock, nick, user}).
@@ -21,32 +21,28 @@ init([Sock]) -> {ok, #state{sock = Sock}}.
 
 handle_cast({channel_event, Name, {join, Nick}}, State) ->
     send(State,
-	 #irc_message{prefix = Nick, command = "JOIN",
-		      params = [], trailing = Name}),
+	 #irc_message{prefix = Nick, command = "JOIN", params = [],
+		      trailing = Name}),
     {noreply, State};
-handle_cast({channel_event, Name,
-	     {privmsg, Nick, Text}},
-	    State) ->
+handle_cast({channel_event, Name, {privmsg, Nick, Text}}, State) ->
     send(State,
-	 #irc_message{prefix = Nick, command = "PRIVMSG",
-		      params = [Name], trailing = Text}),
+	 #irc_message{prefix = Nick, command = "PRIVMSG", params = [Name],
+		      trailing = Text}),
     {noreply, State};
 handle_cast({channel_event, Name, {part, Nick}}, State) ->
-    send(State, #irc_message{prefix = Nick, command = "PART", params = [],
-            trailing = Name}),
+    send(State,
+	 #irc_message{prefix = Nick, command = "PART", params = [],
+		      trailing = Name}),
     {noreply, State};
 handle_cast(Message = #irc_message{}, State) ->
-    send(State, Message),
-    {noreply, State};
+    send(State, Message), {noreply, State};
 handle_cast(_Msg, State) -> {noreply, State}.
 
 handle_call(_Msg, _Caller, State) -> {noreply, State}.
 
-handle_info({tcp, Sock, Line},
-	    State = #state{sock = Sock}) ->
+handle_info({tcp, Sock, Line}, State = #state{sock = Sock}) ->
     error_logger:info_msg("user input: ~p~n", [Line]),
-    try handle_irc_message(ircd_protocol:parse(Line), State)
-    catch
+    try handle_irc_message(ircd_protocol:parse(Line), State) catch
       Reason ->
 	  error_logger:error_msg("invalid input: ~p, reason: ~p~n",
 				 [Line, Reason])
@@ -59,20 +55,15 @@ code_change(_OldVersion, State, _Extra) -> {ok, State}.
 
 %%% Private functions
 
-handle_irc_message(#irc_message{command = "NICK",
-				params = [Nick]},
-		   State) ->
+handle_irc_message(#irc_message{command = "NICK", params = [Nick]}, State) ->
     {noreply,
-     call_system1(maybe_login(State#state{nick = Nick}),
-		  nick_change, [Nick])};
-handle_irc_message(#irc_message{command = "USER",
-				params = [U, H, S], trailing = R},
+     call_system1(maybe_login(State#state{nick = Nick}), nick_change, [Nick])};
+handle_irc_message(#irc_message{command = "USER", params = [U, H, S],
+				trailing = R},
 		   State) ->
-    User = #irc_user{username = U, hostname = H,
-		     servername = S, realname = R},
+    User = #irc_user{username = U, hostname = H, servername = S, realname = R},
     {noreply, maybe_login(State#state{user = User})};
-handle_irc_message(#irc_message{command = "QUIT"},
-		   State) ->
+handle_irc_message(#irc_message{command = "QUIT"}, State) ->
     {stop, normal, disconnect(State)};
 handle_irc_message(#irc_message{command = "JOIN",
 				params = [ChannelString | MaybeKeys]},
@@ -82,8 +73,7 @@ handle_irc_message(#irc_message{command = "JOIN",
 	     [_Keys] -> string:tokens(_Keys, ",");
 	     _ -> []
 	   end,
-    {ChannelInfos, NewState} = call_system(State, join,
-					   [Channels, Keys]),
+    {ChannelInfos, NewState} = call_system(State, join, [Channels, Keys]),
     [begin
        reply(State, 'RPL_NAMREPLY', [Channel, Names]),
        reply(State, 'RPL_ENDOFNAMES', [Channel]),
@@ -91,18 +81,16 @@ handle_irc_message(#irc_message{command = "JOIN",
      end
      || {Channel, Names, Topic} <- ChannelInfos],
     {noreply, NewState};
-handle_irc_message(#irc_message{command = "PRIVMSG",
-				params = [Targets], trailing = Text},
+handle_irc_message(#irc_message{command = "PRIVMSG", params = [Targets],
+				trailing = Text},
 		   State) ->
     {noreply,
-     call_system1(State, privmsg,
-		  [string:tokens(Targets, ","), Text])};
+     call_system1(State, privmsg, [string:tokens(Targets, ","), Text])};
 handle_irc_message(#irc_message{command = "PART", params = [ChannelString]},
-    State) ->
+		   State) ->
     {noreply, call_system1(State, part, [string:tokens(ChannelString, ",")])};
 handle_irc_message(Msg, State) ->
-    error_logger:info_report({ignored_message, Msg}),
-    {noreply, State}.
+    error_logger:info_report({ignored_message, Msg}), {noreply, State}.
 
 disconnect(State = #state{sock = Sock}) ->
     case Sock of
@@ -123,10 +111,8 @@ call_system1(State = #state{}, Command, Args) ->
 maybe_login(State = #state{nick = N, user = U})
     when N =/= undefined andalso U =/= undefined ->
     %% motd
-    reply(State, 'RPL_MOTDSTART',
-	  ["IRCd Server by Cofyc."]),
-    reply(State, 'RPL_MOTD',
-	  ["A irc server written in erlang."]),
+    reply(State, 'RPL_MOTDSTART', ["IRCd Server by Cofyc."]),
+    reply(State, 'RPL_MOTD', ["A irc server written in erlang."]),
     reply(State, 'RPL_ENDOFMOTD', []),
     %% login
     {_, State} = call_system(State, login, [N, U]),
@@ -139,4 +125,5 @@ reply(#state{nick = Nick}, Type, Params) ->
 send(#state{sock = Sock}, Message) ->
     Data = ircd_protocol:compose(Message),
     error_logger:info_msg("reply data: ~p~n", [lists:flatten(Data)]),
-    gen_tcp:send(Sock, Data), ok.
+    gen_tcp:send(Sock, Data),
+    ok.

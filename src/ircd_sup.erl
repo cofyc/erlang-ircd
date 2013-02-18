@@ -12,8 +12,7 @@
 %% API functions
 %% ===================================================================
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %% ===================================================================
 %% Supervisor callbacks
@@ -21,10 +20,8 @@ start_link() ->
 
 init([]) ->
     SockServSpec = {ircd_sockserv,
-		    {ircd_sockserv, start_link, ['127.0.0.1', 6667]},
-		    permanent, 5000, worker, []},
-    ControllerSpec = {ircd_system,
-		      {ircd_system, start_link, []}, permanent, 5000, worker,
-		      []},
-    {ok,
-     {{one_for_one, 5, 10}, [SockServSpec, ControllerSpec]}}.
+		    {ircd_sockserv, start_link, ['127.0.0.1', 6667]}, permanent,
+		    5000, worker, []},
+    ControllerSpec = {ircd_system, {ircd_system, start_link, []}, permanent,
+		      5000, worker, []},
+    {ok, {{one_for_one, 5, 10}, [SockServSpec, ControllerSpec]}}.
