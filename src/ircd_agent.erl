@@ -99,6 +99,9 @@ handle_irc_message(#irc_message{command = "PRIVMSG",
     {noreply,
      call_system1(State, privmsg,
 		  [string:tokens(Targets, ","), Text])};
+handle_irc_message(#irc_message{command = "PART", params = [ChannelString]},
+    State) ->
+    {noreply, call_system1(State, part, [string:tokens(ChannelString, ",")])};
 handle_irc_message(Msg, State) ->
     error_logger:info_report({ignored_message, Msg}),
     {noreply, State}.

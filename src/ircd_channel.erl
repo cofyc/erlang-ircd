@@ -40,6 +40,13 @@ handle_call({privmsg, Nick, Text}, _Caller,
 	    State = #state{}) ->
     ok = broadcast(State, {privmsg, Nick, Text}),
     {reply, ok, State};
+handle_call({part, Nick}, _Caller,
+	    State = #state{members = Members}) ->
+    [erlang:demonitor(Ref)
+     || #member{nick = N, ref = Ref} <- Members, N =:= Nick],
+    NewMembers = lists:keydelete(Nick, #member.nick, Members),
+    ok = broadcast(State, {part, Nick}),
+    {reply, ok, State#state{members = NewMembers}};
 handle_call({members}, _Caller,
 	    State = #state{name = Name, members = Members}) ->
     {reply, {Name, Members}, State};
