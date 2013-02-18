@@ -1,4 +1,9 @@
+%% IRCd protocol
+%%
 %% http://www.irchelp.org/irchelp/rfc/
+%%
+%% This file is modified from https://github.com/tonyg/erlang-ircd.
+%%
 
 -module(ircd_protocol).
 

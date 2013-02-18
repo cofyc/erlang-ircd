@@ -1,4 +1,4 @@
-%% Socket server.
+%% IRCd socket server.
 
 -module(ircd_sockserv).
 
@@ -57,8 +57,6 @@ acceptor(LSock) ->
       {error, Reason} -> exit({error, Reason})
     end,
     acceptor(LSock).
-
-%%% Private functions
 
 host_to_ip(Host) ->
     {ok, IP} = inet:getaddr(Host, inet), IP.

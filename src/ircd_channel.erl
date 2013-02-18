@@ -1,5 +1,7 @@
 %% Channel server.
+%%
 %% Each channel is handled by a separate server process.
+%%
 
 -module(ircd_channel).
 
@@ -21,7 +23,7 @@ start_link(Args) ->
 			  []).
 
 init([Name]) ->
-    io:format("Channel name: ~p~n", [Name]),
+    error_logger:info_msg("Channel ~p created.~n", [Name]),
     {ok, #state{name = Name, members = []}}.
 
 handle_cast(_Msg, State) -> {noreply, State}.
@@ -46,7 +48,7 @@ handle_call(_Msg, _Caller, State) -> {reply, ok, State}.
 handle_info({'DOWN', Ref, process, _Pid, _ExitReason},
 	    State = #state{members = Members}) ->
     [ok = broadcast(State, {part, Nick})
-     || #member{nick = Nick, ref = R} <- Members, R = Ref],
+     || #member{nick = Nick, ref = R} <- Members, R =:= Ref],
     NewMembers = lists:keydelete(Ref, #member.ref, Members),
     {noreply, State#state{members = NewMembers}};
 handle_info(_Msg, State) -> {noreply, State}.
@@ -60,11 +62,8 @@ code_change(_OldVersion, State, _Extra) -> {ok, State}.
 broadcast(#state{name = Name, members = Members},
 	  Event) ->
     Message = {channel_event, Name, Event},
-    error_logger:info_report("broadcast message: ~p~n",
-			     {broadcast, Name, Members, Message}),
-    [begin
-       io:format("send to ~p~n", [Pid]),
-       gen_server:cast(Pid, Message)
-     end
+    error_logger:info_msg("[~p] broadcast message: ~p~n",
+			  [Name, Message]),
+    [begin gen_server:cast(Pid, Message) end
      || #member{pid = Pid} <- Members],
     ok.

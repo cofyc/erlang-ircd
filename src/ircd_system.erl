@@ -1,3 +1,5 @@
+%% IRCd system.
+
 -module(ircd_system).
 
 -behavior(gen_server).
@@ -43,7 +45,6 @@ handle_call({join, [Channels, _Keys]},
 	  {reply,
 	   [begin
 	      Pid = get_channel(Channel),
-	      io:format("Channel pid: ~p~n", [Pid]),
 	      gen_server:call(Pid, {join, Nick, AgentPid}),
 	      %%{Name, Members} = gen_server:call(Pid, members),
 	      {Channel, [], "Topics not yet supported"}
