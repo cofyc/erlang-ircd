@@ -1,3 +1,8 @@
+%% IRCd Application Supervisor
+%%
+%% vim: tabstop=8
+%%
+
 -module(ircd_sup).
 
 -behaviour(supervisor).

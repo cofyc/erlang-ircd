@@ -4,6 +4,8 @@
 %%
 %% This file is modified from https://github.com/tonyg/erlang-ircd.
 %%
+%% vim: tabstop=8
+%%
 
 -module(ircd_protocol).
 

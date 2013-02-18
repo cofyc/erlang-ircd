@@ -1,4 +1,7 @@
 %% IRCd socket server.
+%%
+%% vim: tabstop=8
+%%
 
 -module(ircd_sockserv).
 

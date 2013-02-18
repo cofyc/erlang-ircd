@@ -22,3 +22,9 @@ References
 - https://github.com/tonyg/erlang-ircd
 - http://www.irchelp.org/irchelp/rfc/rfc.html
 - http://en.wikipedia.org/wiki/Internet_Relay_Chat
+
+
+CodingGuidelines
+================
+
+-  http://www.erlang.se/doc/programming_rules.shtml

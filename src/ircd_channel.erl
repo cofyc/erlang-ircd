@@ -2,6 +2,8 @@
 %%
 %% Each channel is handled by a separate server process.
 %%
+%% vim: tabstop=8
+%%
 
 -module(ircd_channel).
 

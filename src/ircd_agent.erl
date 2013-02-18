@@ -3,6 +3,8 @@
 %%
 %% Each client is handled by a separate agent process.
 %%
+%% vim: tabstop=8
+%%
 
 -module(ircd_agent).
 
