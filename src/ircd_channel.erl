@@ -46,9 +46,9 @@ handle_call({part, Nick}, _Caller,
     NewMembers = lists:keydelete(Nick, #member.nick, Members),
     ok = broadcast(State, {part, Nick}),
     {reply, ok, State#state{members = NewMembers}};
-handle_call({members}, _Caller,
+handle_call(info, _Caller,
 	    State = #state{name = Name, members = Members}) ->
-    {reply, {Name, Members}, State};
+    {reply, {Name, [N || #member{nick = N} <- Members]}, State};
 handle_call(_Msg, _Caller, State) -> {reply, ok, State}.
 
 handle_info({'DOWN', Ref, process, _Pid, _ExitReason},

@@ -46,8 +46,8 @@ handle_call({join, [Channels, _Keys]},
 	   [begin
 	      Pid = get_channel(Channel),
 	      gen_server:call(Pid, {join, Nick, AgentPid}),
-	      %%{Name, Members} = gen_server:call(Pid, members),
-	      {Channel, [], "Topics not yet supported"}
+          {_, Nicks} = gen_server:call(Pid, info),
+	      {Channel, Nicks, "Topics not yet supported"}
 	    end
 	    || Channel <- Channels],
 	   State};

@@ -35,6 +35,9 @@ handle_cast({channel_event, Name, {part, Nick}}, State) ->
     send(State, #irc_message{prefix = Nick, command = "PART", params = [],
             trailing = Name}),
     {noreply, State};
+handle_cast(Message = #irc_message{}, State) ->
+    send(State, Message),
+    {noreply, State};
 handle_cast(_Msg, State) -> {noreply, State}.
 
 handle_call(_Msg, _Caller, State) -> {noreply, State}.
@@ -73,7 +76,7 @@ handle_irc_message(#irc_message{command = "QUIT"},
     {stop, normal, disconnect(State)};
 handle_irc_message(#irc_message{command = "JOIN",
 				params = [ChannelString | MaybeKeys]},
-		   State = #state{nick = Nick}) ->
+		   State = #state{}) ->
     Channels = string:tokens(ChannelString, ","),
     Keys = case MaybeKeys of
 	     [_Keys] -> string:tokens(_Keys, ",");
@@ -82,14 +85,9 @@ handle_irc_message(#irc_message{command = "JOIN",
     {ChannelInfos, NewState} = call_system(State, join,
 					   [Channels, Keys]),
     [begin
-       send(State,
-	    ircd_protocol:reply('RPL_NAMREPLY', Nick,
-				[Channel, Names])),
-       send(State,
-	    ircd_protocol:reply('RPL_ENDOFNAMES', Nick, [Channel])),
-       send(State,
-	    ircd_protocol:reply('RPL_TOPIC', Nick,
-				[Channel, Topic]))
+       reply(State, 'RPL_NAMREPLY', [Channel, Names]),
+       reply(State, 'RPL_ENDOFNAMES', [Channel]),
+       reply(State, 'RPL_TOPIC', [Channel, Topic])
      end
      || {Channel, Names, Topic} <- ChannelInfos],
     {noreply, NewState};
@@ -135,8 +133,10 @@ maybe_login(State = #state{nick = N, user = U})
     State;
 maybe_login(State) -> State.
 
-reply(State = #state{nick = Nick}, Type, Params) ->
-    send(State, ircd_protocol:reply(Type, Nick, Params)).
+reply(#state{nick = Nick}, Type, Params) ->
+    gen_server:cast(self(), ircd_protocol:reply(Type, Nick, Params)).
 
 send(#state{sock = Sock}, Message) ->
-    gen_tcp:send(Sock, ircd_protocol:compose(Message)), ok.
+    Data = ircd_protocol:compose(Message),
+    error_logger:info_msg("reply data: ~p~n", [lists:flatten(Data)]),
+    gen_tcp:send(Sock, Data), ok.

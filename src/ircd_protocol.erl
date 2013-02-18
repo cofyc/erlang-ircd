@@ -251,7 +251,7 @@ reply('RPL_WHOREPLY', Target,
 reply('RPL_ENDOFWHO', Target, [Name]) ->
     reply_format(315, [Target, Name], "End of /WHO list");
 reply('RPL_NAMREPLY', Target, [Channel, Nicks]) ->
-    reply_format(353, [Target, "@", Channel], "~s ",
+    reply_format(353, [Target, "=", Channel], "~s",
 		 [string:join(Nicks, " ")]);
 reply('RPL_ENDOFNAMES', Target, [Channel]) ->
     reply_format(366, [Target, Channel],
@@ -307,10 +307,10 @@ reply_format(Code, Params, Trailing) ->
 %% reply_format/4
 
 reply_format(Code, Params, false, []) ->
-    #irc_message{prefix = false, command = Code,
+    #irc_message{prefix = "yechengfu.com", command = Code,
 		 params = Params, trailing = false};
 reply_format(Code, Params, FormatString, FormatArgs) ->
-    #irc_message{prefix = false, command = Code,
+    #irc_message{prefix = "yechengfu.com", command = Code,
 		 params = Params,
 		 trailing =
 		     lists:flatten(io_lib:format(FormatString, FormatArgs))}.
