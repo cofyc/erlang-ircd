@@ -245,10 +245,10 @@ reply_format(Code, Params, Trailing) ->
 %% reply_format/4
 
 reply_format(Code, Params, false, []) ->
-    #irc_message{prefix = "yechengfu.com", command = Code, params = Params,
+    #irc_message{prefix = false, command = Code, params = Params,
 		 trailing = false};
 reply_format(Code, Params, FormatString, FormatArgs) ->
-    #irc_message{prefix = "yechengfu.com", command = Code, params = Params,
+    #irc_message{prefix = false, command = Code, params = Params,
 		 trailing =
 		     lists:flatten(io_lib:format(FormatString, FormatArgs))}.
 

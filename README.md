@@ -37,5 +37,5 @@ References
 - https://github.com/rebar/rebar
 - https://github.com/tonyg/erlang-ircd
 - http://ngircd.barton.de/index.php.en
-- http://www.irchelp.org/irchelp/rfc/rfc.html
 - http://en.wikipedia.org/wiki/Internet_Relay_Chat
+- http://tools.ietf.org/html/rfc1459

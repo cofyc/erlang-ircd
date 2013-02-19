@@ -7,6 +7,8 @@
 
 -behavior(gen_server).
 
+-include("ircd.hrl").
+
 %% API
 -export([start_link/0]).
 
@@ -17,26 +19,27 @@
 %% gen_server state
 -record(state, {agents}).
 
--record(agent, {nick, user}).
+-record(agent, {pid, nick, user}).
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
     ircd_channels = ets:new(ircd_channels, [set, named_table]),
-    {ok, #state{agents = ets:new(agents, [set, named_table])}}.
+    {ok, #state{agents = ets:new(agents, [set, named_table, {keypos,
+                #agent.pid}])}}.
 
 handle_cast(_Msg, State) -> {noreply, State}.
 
 handle_call({login, [Nick, User]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
-    ets:insert(Agents, {AgentPid, #agent{nick = Nick, user = User}}),
+    ets:insert(Agents, #agent{pid = AgentPid, nick = Nick, user = User}),
     {reply, ok, State#state{agents = Agents}};
 handle_call({nick_change, [Nick]}, _Caller, State = #state{}) ->
     {reply, Nick, State};
 handle_call({join, [Channels, _Keys]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
     case ets:lookup(Agents, AgentPid) of
-      [{AgentPid, #agent{nick = Nick, user = _User}}] ->
+      [#agent{pid = AgentPid, nick = Nick, user = _User}] ->
 	  {reply,
 	   [begin
 	      Pid = get_channel(Channel),
@@ -51,7 +54,7 @@ handle_call({join, [Channels, _Keys]}, {AgentPid, _AgentRef},
 handle_call({privmsg, [Channels, Text]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
     case ets:lookup(Agents, AgentPid) of
-      [{AgentPid, #agent{nick = Nick, user = _User}}] ->
+      [#agent{pid = AgentPid, nick = Nick, user = _User}] ->
 	  _ = [begin
 	     Pid = get_channel(Channel),
 	     gen_server:call(Pid, {privmsg, Nick, Text})
@@ -63,7 +66,7 @@ handle_call({privmsg, [Channels, Text]}, {AgentPid, _AgentRef},
 handle_call({part, [Channels]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
     case ets:lookup(Agents, AgentPid) of
-      [{AgentPid, #agent{nick = Nick, user = _User}}] ->
+      [#agent{pid = AgentPid, nick = Nick, user = _User}] ->
 	  _ = [begin
 	     Pid = get_channel(Channel), gen_server:call(Pid, {part, Nick})
 	   end
