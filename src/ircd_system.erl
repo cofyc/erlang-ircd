@@ -52,7 +52,7 @@ handle_call({privmsg, [Channels, Text]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
     case ets:lookup(Agents, AgentPid) of
       [{AgentPid, #agent{nick = Nick, user = _User}}] ->
-	  [begin
+	  _ = [begin
 	     Pid = get_channel(Channel),
 	     gen_server:call(Pid, {privmsg, Nick, Text})
 	   end
@@ -64,7 +64,7 @@ handle_call({part, [Channels]}, {AgentPid, _AgentRef},
 	    State = #state{agents = Agents}) ->
     case ets:lookup(Agents, AgentPid) of
       [{AgentPid, #agent{nick = Nick, user = _User}}] ->
-	  [begin
+	  _ = [begin
 	     Pid = get_channel(Channel), gen_server:call(Pid, {part, Nick})
 	   end
 	   || Channel <- Channels, is_channel_name(Channel)],

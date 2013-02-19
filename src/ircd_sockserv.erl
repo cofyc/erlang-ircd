@@ -49,7 +49,7 @@ acceptor(LSock) ->
     case gen_tcp:accept(LSock) of
       {ok, Sock} ->
 	  {ok, Pid} = gen_server:start_link(ircd_agent, [Sock], []),
-	  gen_tcp:controlling_process(Sock, Pid);
+	  ok = gen_tcp:controlling_process(Sock, Pid);
       {error, Reason} -> exit({error, Reason})
     end,
     acceptor(LSock).

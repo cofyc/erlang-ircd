@@ -12,6 +12,13 @@ clean:
 run: rel
 	./rel/ircd/bin/ircd console
 
+xref: clean all
+	rebar xref
+
+dialyzer: clean all
+	dialyzer -q -n ebin -Wunmatched_returns -Werror_handling \
+	        -Wrace_conditions
+
 test:
 	rebar eunit
 
@@ -29,4 +36,4 @@ relclean:
 distclean: clean relclean
 	rebar delete-deps
 
-.PHONY: clean test deps
+.PHONY: clean test deps check

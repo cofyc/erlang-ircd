@@ -15,6 +15,22 @@ Install erlang & [rebar](https://github.com/rebar/rebar) first.
     # start as daemon
     $ ./rel/ircd/bin/ircd start
 
+Development
+===========
+
+### CodingGuidelines
+
+-  http://www.erlang.se/doc/programming_rules.shtml
+
+### Check
+
+Before committing:
+    
+- Run `make tidy` to tidy source code.
+- Run `make test` to execute the test suite.
+- Run `make xref` to check for [xref](http://www.erlang.org/doc/man/xref.html).
+- Run `make dialyzer` to check [Dialyzer](http://www.erlang.org/doc/man/dialyzer.html) warnings.
+
 References
 ==========
 
@@ -22,9 +38,3 @@ References
 - https://github.com/tonyg/erlang-ircd
 - http://www.irchelp.org/irchelp/rfc/rfc.html
 - http://en.wikipedia.org/wiki/Internet_Relay_Chat
-
-
-CodingGuidelines
-================
-
--  http://www.erlang.se/doc/programming_rules.shtml

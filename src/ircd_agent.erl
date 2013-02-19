@@ -76,7 +76,7 @@ handle_irc_message(#irc_message{command = "JOIN",
 	     _ -> []
 	   end,
     {ChannelInfos, NewState} = call_system(State, join, [Channels, Keys]),
-    [begin
+    _ = [begin
        reply(State, 'RPL_NAMREPLY', [Channel, Names]),
        reply(State, 'RPL_ENDOFNAMES', [Channel]),
        reply(State, 'RPL_TOPIC', [Channel, Topic])
@@ -127,5 +127,5 @@ reply(#state{nick = Nick}, Type, Params) ->
 send(#state{sock = Sock}, Message) ->
     Data = ircd_protocol:compose(Message),
     error_logger:info_msg("reply data: ~p~n", [lists:flatten(Data)]),
-    gen_tcp:send(Sock, Data),
+    ok = gen_tcp:send(Sock, Data),
     ok.

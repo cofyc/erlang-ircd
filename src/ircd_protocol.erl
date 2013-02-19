@@ -11,7 +11,7 @@
 
 -export([compose/1, parse/1]).
 
--export([reply/3, reply_format/3, reply_format/4]).
+-export([reply/3]).
 
 -include("ircd.hrl").
 
