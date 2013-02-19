@@ -24,8 +24,10 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 %% ===================================================================
 
 init([]) ->
+    {ok, Host} = application:get_env(host),
+    {ok, Port} = application:get_env(port),
     SockServSpec = {ircd_sockserv,
-		    {ircd_sockserv, start_link, ['127.0.0.1', 6667]}, permanent,
+		    {ircd_sockserv, start_link, [Host, Port]}, permanent,
 		    5000, worker, []},
     ControllerSpec = {ircd_system, {ircd_system, start_link, []}, permanent,
 		      5000, worker, []},
