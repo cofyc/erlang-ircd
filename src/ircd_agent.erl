@@ -23,8 +23,8 @@ init([Sock]) -> {ok, #state{sock = Sock}}.
 
 handle_cast({channel_event, Name, {join, Nick}}, State) ->
     send(State,
-	 #irc_message{prefix = Nick, command = "JOIN", params = [],
-		      trailing = Name}),
+	 #irc_message{prefix = Nick ++ "@localhost", command = "JOIN", params = [Name],
+		      trailing = false}),
     {noreply, State};
 handle_cast({channel_event, Name, {privmsg, Nick, Text}}, State) ->
     send(State,
@@ -43,7 +43,7 @@ handle_cast(_Msg, State) -> {noreply, State}.
 handle_call(_Msg, _Caller, State) -> {noreply, State}.
 
 handle_info({tcp, Sock, Line}, State = #state{sock = Sock}) ->
-    error_logger:info_msg("user input: ~p~n", [Line]),
+    error_logger:info_msg("input: ~p~n", [Line]),
     try handle_irc_message(ircd_protocol:parse(Line), State) catch
       Reason ->
 	  error_logger:error_msg("invalid input: ~p, reason: ~p~n",
@@ -113,8 +113,10 @@ call_system1(State = #state{}, Command, Args) ->
 maybe_login(State = #state{nick = N, user = U})
     when N =/= undefined andalso U =/= undefined ->
     %% motd
-    reply(State, 'RPL_MOTDSTART', ["IRCd Server by Cofyc."]),
-    reply(State, 'RPL_MOTD', ["A irc server written in erlang."]),
+    {ok, Server} = application:get_env(server),
+    {ok, Description} = application:get_env(description),
+    reply(State, 'RPL_MOTDSTART', [Server]),
+    reply(State, 'RPL_MOTD', [Description]),
     reply(State, 'RPL_ENDOFMOTD', []),
     %% login
     {_, State} = call_system(State, login, [N, U]),
@@ -124,8 +126,8 @@ maybe_login(State) -> State.
 reply(#state{nick = Nick}, Type, Params) ->
     gen_server:cast(self(), ircd_protocol:reply(Type, Nick, Params)).
 
-send(#state{sock = Sock}, Message) ->
+send(#state{sock = Sock, nick=Nick}, Message) ->
     Data = ircd_protocol:compose(Message),
-    error_logger:info_msg("reply data: ~p~n", [lists:flatten(Data)]),
+    error_logger:info_msg("reply to ~p: ~p~n", [Nick, lists:flatten(Data)]),
     ok = gen_tcp:send(Sock, Data),
     ok.
