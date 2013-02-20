@@ -21,19 +21,19 @@
 
 init([Sock]) -> {ok, #state{sock = Sock}}.
 
-handle_cast({channel_event, Name, {join, Nick}}, State) ->
+handle_cast({channel_event, Name, {join, AgentPid}}, State) ->
     send(State,
-	 #irc_message{prefix = Nick ++ "@localhost", command = "JOIN",
+	 #irc_message{prefix = user_mask(AgentPid), command = "JOIN",
 		      params = [Name], trailing = false}),
     {noreply, State};
-handle_cast({channel_event, Name, {privmsg, Nick, Text}}, State) ->
+handle_cast({channel_event, Name, {privmsg, AgentPid, Text}}, State) ->
     send(State,
-	 #irc_message{prefix = Nick, command = "PRIVMSG", params = [Name],
+	 #irc_message{prefix = user_mask(AgentPid), command = "PRIVMSG", params = [Name],
 		      trailing = Text}),
     {noreply, State};
-handle_cast({channel_event, Name, {part, Nick}}, State) ->
+handle_cast({channel_event, Name, {part, AgentPid}}, State) ->
     send(State,
-	 #irc_message{prefix = Nick, command = "PART", params = [],
+	 #irc_message{prefix = user_mask(AgentPid), command = "PART", params = [],
 		      trailing = Name}),
     {noreply, State};
 handle_cast(Message = #irc_message{}, State) ->
@@ -63,6 +63,8 @@ handle_irc_message(#irc_message{command = "NICK", params = [Nick]}, State) ->
 handle_irc_message(#irc_message{command = "USER", params = [U, H, S],
 				trailing = R},
 		   State) ->
+    error_logger:info_msg("username: ~p, hostname: ~p, servername: ~p, realname:
+        ~p~n", [U, H, S, R]),
     User = #irc_user{username = U, hostname = H, servername = S, realname = R},
     {noreply, maybe_login(State#state{user = User})};
 handle_irc_message(#irc_message{command = "QUIT"}, State) ->
@@ -131,3 +133,15 @@ send(#state{sock = Sock, nick = Nick}, Message) ->
     error_logger:info_msg("reply to ~p: ~p~n", [Nick, lists:flatten(Data)]),
     ok = gen_tcp:send(Sock, Data),
     ok.
+
+% 
+% Return ID of a client.
+% 
+% This client ID is used for IRC prefixes.
+%
+user_mask(AgentPid) ->
+    case ets:lookup(ircd_agents, AgentPid) of
+      [#irc_agent{pid = AgentPid, nick = Nick, user = #irc_user{username=User}}] ->
+          io_lib:format("~s!~s@~s", [Nick, User, "localhost"]);
+      [] -> throw(bad_agentpid)
+    end.

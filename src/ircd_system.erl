@@ -2,6 +2,10 @@
 %%
 %% vim: tabstop=8
 %%
+%% shared ets:
+%%  ircd_channels
+%%  ircd_agents
+%%
 
 -module(ircd_system).
 
@@ -17,30 +21,25 @@
 	 terminate/2]).
 
 %% gen_server state
--record(state, {agents}).
-
--record(agent, {pid, nick, user}).
+-record(state, {}).
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-    ircd_channels = ets:new(ircd_channels, [set, named_table]),
-    {ok,
-     #state{agents =
-		ets:new(agents, [set, named_table, {keypos, #agent.pid}])}}.
+    _ = ets:new(ircd_agents, [set, named_table, {keypos, #irc_agent.pid}]),
+    _ = ets:new(ircd_channels, [set, named_table]),
+    {ok, #state{}}.
 
 handle_cast(_Msg, State) -> {noreply, State}.
 
-handle_call({login, [Nick, User]}, {AgentPid, _AgentRef},
-	    State = #state{agents = Agents}) ->
-    ets:insert(Agents, #agent{pid = AgentPid, nick = Nick, user = User}),
-    {reply, ok, State#state{agents = Agents}};
-handle_call({nick_change, [Nick]}, _Caller, State = #state{}) ->
+handle_call({login, [Nick, User]}, {AgentPid, _AgentRef}, State) ->
+    ets:insert(ircd_agents, #irc_agent{pid = AgentPid, nick = Nick, user = User}),
+    {reply, ok, State};
+handle_call({nick_change, [Nick]}, _Caller, State) ->
     {reply, Nick, State};
-handle_call({join, [Channels, _Keys]}, {AgentPid, _AgentRef},
-	    State = #state{agents = Agents}) ->
-    case ets:lookup(Agents, AgentPid) of
-      [#agent{pid = AgentPid, nick = Nick, user = _User}] ->
+handle_call({join, [Channels, _Keys]}, {AgentPid, _AgentRef}, State) ->
+    case ets:lookup(ircd_agents, AgentPid) of
+      [#irc_agent{pid = AgentPid, nick = Nick}] ->
 	  {reply,
 	   [begin
 	      Pid = get_channel(Channel),
@@ -52,24 +51,23 @@ handle_call({join, [Channels, _Keys]}, {AgentPid, _AgentRef},
 	   State};
       [] -> {reply, {error, exception}, State}
     end;
-handle_call({privmsg, [Channels, Text]}, {AgentPid, _AgentRef},
-	    State = #state{agents = Agents}) ->
-    case ets:lookup(Agents, AgentPid) of
-      [#agent{pid = AgentPid, nick = Nick, user = _User}] ->
+handle_call({privmsg, [Channels, Text]}, {AgentPid, _AgentRef}, State) ->
+    case ets:lookup(ircd_agents, AgentPid) of
+      [#irc_agent{pid = AgentPid, nick = _Nick, user = _User}] ->
 	  _ = [begin
 		 Pid = get_channel(Channel),
-		 gen_server:call(Pid, {privmsg, Nick, Text})
+		 gen_server:call(Pid, {privmsg, AgentPid, Text})
 	       end
 	       || Channel <- Channels, is_channel_name(Channel)],
 	  {reply, ok, State};
       [] -> {reply, {error, exception}, State}
     end;
-handle_call({part, [Channels]}, {AgentPid, _AgentRef},
-	    State = #state{agents = Agents}) ->
-    case ets:lookup(Agents, AgentPid) of
-      [#agent{pid = AgentPid, nick = Nick, user = _User}] ->
+handle_call({part, [Channels]}, {AgentPid, _AgentRef}, State) ->
+    case ets:lookup(ircd_agents, AgentPid) of
+      [#irc_agent{pid = AgentPid, nick = _Nick, user = _User}] ->
 	  _ = [begin
-		 Pid = get_channel(Channel), gen_server:call(Pid, {part, Nick})
+		 Pid = get_channel(Channel), gen_server:call(Pid, {part,
+                         AgentPid})
 	       end
 	       || Channel <- Channels, is_channel_name(Channel)],
 	  {reply, ok, State};

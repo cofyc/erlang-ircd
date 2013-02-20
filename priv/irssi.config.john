@@ -122,7 +122,7 @@ statusbar = {
   };
 };
 settings = {
-  core = { real_name = "John"; user_name = "John"; nick = "John"; };
+  core = { real_name = "John"; user_name = "John"; nick = "JohnNick"; };
   "fe-text" = {
     actlist_sort = "refnum";
     term_force_colors = "yes";
