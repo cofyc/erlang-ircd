@@ -40,7 +40,7 @@ handle_call({privmsg, Nick, Text}, _Caller, State = #state{}) ->
     ok = broadcast(State, Nick, {privmsg, Nick, Text}), {reply, ok, State};
 handle_call({part, Nick}, _Caller, State = #state{members = Members}) ->
     _ = [erlang:demonitor(Ref)
-     || #member{nick = N, ref = Ref} <- Members, N =:= Nick],
+	 || #member{nick = N, ref = Ref} <- Members, N =:= Nick],
     NewMembers = lists:keydelete(Nick, #member.nick, Members),
     ok = broadcast(State, {part, Nick}),
     {reply, ok, State#state{members = NewMembers}};
@@ -51,7 +51,7 @@ handle_call(_Msg, _Caller, State) -> {reply, ok, State}.
 handle_info({'DOWN', Ref, process, _Pid, _ExitReason},
 	    State = #state{members = Members}) ->
     _ = [broadcast(State, {part, Nick})
-     || #member{nick = Nick, ref = R} <- Members, R =:= Ref],
+	 || #member{nick = Nick, ref = R} <- Members, R =:= Ref],
     NewMembers = lists:keydelete(Ref, #member.ref, Members),
     {noreply, State#state{members = NewMembers}};
 handle_info(_Msg, State) -> {noreply, State}.
@@ -60,27 +60,25 @@ terminate(_Reason, _State) -> ok.
 
 code_change(_OldVersion, State, _Extra) -> {ok, State}.
 
-%%% Private functions
+%% Private functions
 
-%% broadcast/2
-%%
-%% Broadcast message to all members of this channel.
-%%
-
+% broadcast/2
+%
+% Broadcast message to all members of this channel.
+%
 broadcast(#state{name = Name, members = Members}, Event) ->
     Message = {channel_event, Name, Event},
     error_logger:info_msg("[~p] broadcast message: ~p~n", [Name, Message]),
     _ = [gen_server:cast(Pid, Message) || #member{pid = Pid} <- Members],
     ok.
 
-%% broadcast/3
-%%
-%% Broadcast message to all members of this channel except given one.
-%%
-
+% broadcast/3
+%
+% Broadcast message to all members of this channel except given one.
+%
 broadcast(#state{name = Name, members = Members}, Nick, Event) ->
     Message = {channel_event, Name, Event},
     error_logger:info_msg("[~p] broadcast message: ~p~n", [Name, Message]),
     _ = [gen_server:cast(Pid, Message)
-     || #member{pid = Pid, nick = N} <- Members, N =/= Nick],
+	 || #member{pid = Pid, nick = N} <- Members, N =/= Nick],
     ok.

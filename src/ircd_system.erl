@@ -25,8 +25,9 @@ start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
     ircd_channels = ets:new(ircd_channels, [set, named_table]),
-    {ok, #state{agents = ets:new(agents, [set, named_table, {keypos,
-                #agent.pid}])}}.
+    {ok,
+     #state{agents =
+		ets:new(agents, [set, named_table, {keypos, #agent.pid}])}}.
 
 handle_cast(_Msg, State) -> {noreply, State}.
 
@@ -56,10 +57,10 @@ handle_call({privmsg, [Channels, Text]}, {AgentPid, _AgentRef},
     case ets:lookup(Agents, AgentPid) of
       [#agent{pid = AgentPid, nick = Nick, user = _User}] ->
 	  _ = [begin
-	     Pid = get_channel(Channel),
-	     gen_server:call(Pid, {privmsg, Nick, Text})
-	   end
-	   || Channel <- Channels, is_channel_name(Channel)],
+		 Pid = get_channel(Channel),
+		 gen_server:call(Pid, {privmsg, Nick, Text})
+	       end
+	       || Channel <- Channels, is_channel_name(Channel)],
 	  {reply, ok, State};
       [] -> {reply, {error, exception}, State}
     end;
@@ -68,9 +69,9 @@ handle_call({part, [Channels]}, {AgentPid, _AgentRef},
     case ets:lookup(Agents, AgentPid) of
       [#agent{pid = AgentPid, nick = Nick, user = _User}] ->
 	  _ = [begin
-	     Pid = get_channel(Channel), gen_server:call(Pid, {part, Nick})
-	   end
-	   || Channel <- Channels, is_channel_name(Channel)],
+		 Pid = get_channel(Channel), gen_server:call(Pid, {part, Nick})
+	       end
+	       || Channel <- Channels, is_channel_name(Channel)],
 	  {reply, ok, State};
       [] -> {reply, {error, exception}, State}
     end;
@@ -82,7 +83,7 @@ terminate(_Reason, _State) -> ok.
 
 code_change(_OldVersion, State, _Extra) -> {ok, State}.
 
-%%% Private functions
+%% Private functions
 
 get_channel(Name) ->
     case ets:lookup(ircd_channels, Name) of

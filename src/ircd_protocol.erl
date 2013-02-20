@@ -252,7 +252,7 @@ reply_format(Code, Params, FormatString, FormatArgs) ->
 		 trailing =
 		     lists:flatten(io_lib:format(FormatString, FormatArgs))}.
 
-%%% Private functions
+%% Private functions
 
 compose_message(#irc_message{command = Command, params = Params,
 			     trailing = Trailing}) ->

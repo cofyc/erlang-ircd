@@ -23,8 +23,8 @@ init([Sock]) -> {ok, #state{sock = Sock}}.
 
 handle_cast({channel_event, Name, {join, Nick}}, State) ->
     send(State,
-	 #irc_message{prefix = Nick ++ "@localhost", command = "JOIN", params = [Name],
-		      trailing = false}),
+	 #irc_message{prefix = Nick ++ "@localhost", command = "JOIN",
+		      params = [Name], trailing = false}),
     {noreply, State};
 handle_cast({channel_event, Name, {privmsg, Nick, Text}}, State) ->
     send(State,
@@ -55,7 +55,7 @@ terminate(_Reason, _State) -> ok.
 
 code_change(_OldVersion, State, _Extra) -> {ok, State}.
 
-%%% Private functions
+%% Private functions
 
 handle_irc_message(#irc_message{command = "NICK", params = [Nick]}, State) ->
     {noreply,
@@ -77,11 +77,11 @@ handle_irc_message(#irc_message{command = "JOIN",
 	   end,
     {ChannelInfos, NewState} = call_system(State, join, [Channels, Keys]),
     _ = [begin
-       reply(State, 'RPL_NAMREPLY', [Channel, Names]),
-       reply(State, 'RPL_ENDOFNAMES', [Channel]),
-       reply(State, 'RPL_TOPIC', [Channel, Topic])
-     end
-     || {Channel, Names, Topic} <- ChannelInfos],
+	   reply(State, 'RPL_NAMREPLY', [Channel, Names]),
+	   reply(State, 'RPL_ENDOFNAMES', [Channel]),
+	   reply(State, 'RPL_TOPIC', [Channel, Topic])
+	 end
+	 || {Channel, Names, Topic} <- ChannelInfos],
     {noreply, NewState};
 handle_irc_message(#irc_message{command = "PRIVMSG", params = [Targets],
 				trailing = Text},
@@ -126,7 +126,7 @@ maybe_login(State) -> State.
 reply(#state{nick = Nick}, Type, Params) ->
     gen_server:cast(self(), ircd_protocol:reply(Type, Nick, Params)).
 
-send(#state{sock = Sock, nick=Nick}, Message) ->
+send(#state{sock = Sock, nick = Nick}, Message) ->
     Data = ircd_protocol:compose(Message),
     error_logger:info_msg("reply to ~p: ~p~n", [Nick, lists:flatten(Data)]),
     ok = gen_tcp:send(Sock, Data),
