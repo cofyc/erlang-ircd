@@ -28,7 +28,7 @@
 start_link(Args) -> gen_server:start_link(?MODULE, Args, []).
 
 init([Name]) ->
-    error_logger:info_msg("Channel ~p created.~n", [Name]),
+    error_logger:info_msg("[channel ~s] created.", [Name]),
     {ok, #state{
             name = Name,
             members_tabid = ets:new(channel_members, [set, {keypos,
@@ -63,8 +63,9 @@ handle_call(info, _Caller, State = #state{name = Name, members_tabid =
 handle_call(_Msg, _Caller, State) -> {reply, ok, State}.
 
 handle_info({'DOWN', Ref, process, Pid, _ExitReason},
-	    State = #state{members_tabid = MembersTabId}) ->
-    error_logger:info_msg("agent: ~p down~n", Ref),
+	    State = #state{name = Name, members_tabid = MembersTabId}) ->
+    error_logger:info_msg("[channel ~s] ~p agent exit, ref: ~p~n", [Name, Pid,
+            Ref]),
     case ets:lookup(MembersTabId, Pid) of
       [#member{agent_pid = AgentPid, agent_ref = Ref}] ->
           erlang:demonitor(Ref),
@@ -86,7 +87,7 @@ code_change(_OldVersion, State, _Extra) -> {ok, State}.
 %
 broadcast(#state{name = Name, members_tabid = MembersTabId}, Event) ->
     Message = {channel_event, Name, Event},
-    error_logger:info_msg("[~s] broadcast message: ~p~n", [Name, Message]),
+    error_logger:info_msg("[channel ~s] broadcast: ~p~n", [Name, Message]),
     _ = [ gen_server:cast(Pid, Message) || #member{agent_pid = Pid} <-
         ets:tab2list(MembersTabId)],
     ok.
@@ -97,7 +98,8 @@ broadcast(#state{name = Name, members_tabid = MembersTabId}, Event) ->
 %
 broadcast(#state{name = Name, members_tabid = MembersTabId}, AgentPid, Event) ->
     Message = {channel_event, Name, Event},
-    error_logger:info_msg("[~s] broadcast message: ~p~n", [Name, Message]),
+    error_logger:info_msg("[channel ~s] broadcast (except ~p): ~p~n", [Name,
+            AgentPid, Message]),
     _ = [gen_server:cast(Pid, Message)
 	 || #member{agent_pid = Pid} <- ets:tab2list(MembersTabId), AgentPid =/= Pid],
     ok.
