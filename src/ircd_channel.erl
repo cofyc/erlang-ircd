@@ -63,6 +63,9 @@ code_change(_OldVersion, State, _Extra) -> {ok, State}.
 %%% Private functions
 
 %% broadcast/2
+%%
+%% Broadcast message to all members of this channel.
+%%
 
 broadcast(#state{name = Name, members = Members}, Event) ->
     Message = {channel_event, Name, Event},
@@ -71,6 +74,10 @@ broadcast(#state{name = Name, members = Members}, Event) ->
     ok.
 
 %% broadcast/3
+%%
+%% Broadcast message to all members of this channel except given one.
+%%
+
 broadcast(#state{name = Name, members = Members}, Nick, Event) ->
     Message = {channel_event, Name, Event},
     error_logger:info_msg("[~p] broadcast message: ~p~n", [Name, Message]),
