@@ -10,6 +10,7 @@
 
 -behavior(gen_server).
 
+-include_lib("kernel/include/inet.hrl").
 -include("ircd.hrl").
 
 %% gen_server callbacks
@@ -17,9 +18,12 @@
 	 terminate/2]).
 
 %% gen_server state
--record(state, {sock, nick, user}).
+-record(state, {sock, nick, host, user}).
 
-init([Sock]) -> {ok, #state{sock = Sock}}.
+init([Sock]) -> 
+    {ok, {Address, _}} = inet:peername(Sock),
+    {ok, Hostent} = inet:gethostbyaddr(Address),
+    {ok, #state{sock = Sock, host = Hostent#hostent.h_name}}.
 
 handle_cast({channel_event, Name, {join, AgentPid}}, State) ->
     send(State,
@@ -112,7 +116,7 @@ call_system(State = #state{}, Command, Args) ->
 call_system1(State = #state{}, Command, Args) ->
     {_, State} = call_system(State, Command, Args), State.
 
-maybe_login(State = #state{nick = N, user = U})
+maybe_login(State = #state{nick = N, user = U, host = H})
     when N =/= undefined andalso U =/= undefined ->
     %% motd
     {ok, Server} = application:get_env(server),
@@ -121,7 +125,7 @@ maybe_login(State = #state{nick = N, user = U})
     reply(State, 'RPL_MOTD', [Description]),
     reply(State, 'RPL_ENDOFMOTD', []),
     %% login
-    {_, State} = call_system(State, login, [N, U]),
+    {_, State} = call_system(State, login, [N, U, H]),
     State;
 maybe_login(State) -> State.
 
@@ -141,7 +145,8 @@ send(#state{sock = Sock, nick = Nick}, Message) ->
 %
 user_mask(AgentPid) ->
     case ets:lookup(ircd_agents, AgentPid) of
-      [#irc_agent{pid = AgentPid, nick = Nick, user = #irc_user{username=User}}] ->
-          io_lib:format("~s!~s@~s", [Nick, User, "localhost"]);
+      [#irc_agent{pid = AgentPid, nick = Nick, user = #irc_user{username=User},
+          host = Host}] ->
+          io_lib:format("~s!~s@~s", [Nick, User, Host]);
       [] -> throw(bad_agentpid)
     end.

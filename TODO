@@ -1,3 +1,1 @@
-* get agent host, reply with host info
 * check nickname is valid or not and length (max: 9)
-* use agent pid as unique agent

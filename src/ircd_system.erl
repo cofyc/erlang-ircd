@@ -32,8 +32,9 @@ init([]) ->
 
 handle_cast(_Msg, State) -> {noreply, State}.
 
-handle_call({login, [Nick, User]}, {AgentPid, _AgentRef}, State) ->
-    ets:insert(ircd_agents, #irc_agent{pid = AgentPid, nick = Nick, user = User}),
+handle_call({login, [Nick, User, Host]}, {AgentPid, _AgentRef}, State) ->
+    ets:insert(ircd_agents, #irc_agent{pid = AgentPid, nick = Nick, user = User,
+        host = Host}),
     {reply, ok, State};
 handle_call({nick_change, [Nick]}, _Caller, State) ->
     {reply, Nick, State};

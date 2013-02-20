@@ -1,3 +1,3 @@
 -record(irc_message, {prefix = false, command, params, trailing = false}).
 -record(irc_user, {username, hostname, servername, realname}).
--record(irc_agent, {pid, nick, user}).
+-record(irc_agent, {pid, nick, user, host}).
