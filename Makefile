@@ -27,9 +27,9 @@ tidy:
 
 rel: VSN = $(shell ./get_vsn)
 rel: all
-	rebar generate
+	rebar -f generate
 	rm -rf rel/ircd_$(VSN)
-	mv rel/ircd rel/ircd_$(VSN)
+	cp -r rel/ircd rel/ircd_$(VSN)
 
 distclean: clean
 	rm -rf rel/ircd
