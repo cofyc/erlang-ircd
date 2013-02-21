@@ -25,8 +25,11 @@ test:
 tidy:
 	./tidy ./src
 
+rel: VSN = $(shell ./get_vsn)
 rel: all
-	rebar -f generate
+	rebar generate
+	rm -rf rel/ircd_$(VSN)
+	mv rel/ircd rel/ircd_$(VSN)
 
 distclean: clean
 	rm -rf rel/ircd

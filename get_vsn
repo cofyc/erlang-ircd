@@ -1,0 +1,8 @@
+#!/usr/bin/env escript
+%%
+%% vim: ft=erlang tabstop=8
+
+main(_Args) ->
+    {ok, Terms} = file:consult("./src/ircd.app.src"),
+    [{application, ircd, PropList}] = Terms,
+    io:format("~s~n", [proplists:get_value(vsn, PropList)]).
