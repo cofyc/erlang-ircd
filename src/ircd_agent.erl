@@ -23,8 +23,11 @@
 
 init([Sock]) ->
     {ok, {Address, _}} = inet:peername(Sock),
-    {ok, Hostent} = inet:gethostbyaddr(Address),
-    {ok, #state{sock = Sock, host = Hostent#hostent.h_name}}.
+    Hostname = case inet:gethostbyaddr(Address) of
+        {ok, Hostent} -> Hostent#hostent.h_name;
+        {error, _} -> inet_parse:ntoa(Address)
+    end,
+    {ok, #state{sock = Sock, host = Hostname}}.
 
 handle_cast({channel_event, Name, {join, AgentPid}}, State) ->
     send(State,
