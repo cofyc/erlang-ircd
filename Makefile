@@ -27,13 +27,11 @@ tidy:
 	@erl -noshell -s tidy start -s init stop
 	@rm -rf *.beam
 
-rel: all relclean
-	rebar compile generate
+rel: all
+	rebar -f generate
 
-relclean:
+distclean: clean
 	rm -rf rel/ircd
-
-distclean: clean relclean
 	rebar delete-deps
 
-.PHONY: clean test deps check
+.PHONY: clean rel distclean test deps compile run xref dialyzer tidy all
