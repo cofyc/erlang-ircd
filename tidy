@@ -1,0 +1,5 @@
+#!/usr/bin/env escript
+%% vim: tabstop=8
+
+main(Args) ->
+    erl_tidy:dir(Args, [{backups, false}, {ribbon, 80}]).

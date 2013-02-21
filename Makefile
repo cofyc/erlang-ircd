@@ -23,9 +23,7 @@ test:
 	rebar eunit
 
 tidy:
-	@erlc tidy.erl
-	@erl -noshell -s tidy start -s init stop
-	@rm -rf *.beam
+	./tidy ./src
 
 rel: all
 	rebar -f generate

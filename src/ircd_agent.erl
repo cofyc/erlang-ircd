@@ -11,6 +11,7 @@
 -behavior(gen_server).
 
 -include_lib("kernel/include/inet.hrl").
+
 -include("ircd.hrl").
 
 %% gen_server callbacks
@@ -20,7 +21,7 @@
 %% gen_server state
 -record(state, {sock, nick, host, user}).
 
-init([Sock]) -> 
+init([Sock]) ->
     {ok, {Address, _}} = inet:peername(Sock),
     {ok, Hostent} = inet:gethostbyaddr(Address),
     {ok, #state{sock = Sock, host = Hostent#hostent.h_name}}.
@@ -32,13 +33,13 @@ handle_cast({channel_event, Name, {join, AgentPid}}, State) ->
     {noreply, State};
 handle_cast({channel_event, Name, {privmsg, AgentPid, Text}}, State) ->
     send(State,
-	 #irc_message{prefix = user_mask(AgentPid), command = "PRIVMSG", params = [Name],
-		      trailing = Text}),
+	 #irc_message{prefix = user_mask(AgentPid), command = "PRIVMSG",
+		      params = [Name], trailing = Text}),
     {noreply, State};
 handle_cast({channel_event, Name, {part, AgentPid}}, State) ->
     send(State,
-	 #irc_message{prefix = user_mask(AgentPid), command = "PART", params = [],
-		      trailing = Name}),
+	 #irc_message{prefix = user_mask(AgentPid), command = "PART",
+		      params = [], trailing = Name}),
     {noreply, State};
 handle_cast(Message = #irc_message{}, State) ->
     send(State, Message), {noreply, State};
@@ -67,8 +68,9 @@ handle_irc_message(#irc_message{command = "NICK", params = [Nick]}, State) ->
 handle_irc_message(#irc_message{command = "USER", params = [U, H, S],
 				trailing = R},
 		   State) ->
-    error_logger:info_msg("username: ~p, hostname: ~p, servername: ~p, realname:
-        ~p~n", [U, H, S, R]),
+    error_logger:info_msg("username: ~p, hostname: ~p, servername: ~p, realname:\n "
+			  "       ~p~n",
+			  [U, H, S, R]),
     User = #irc_user{username = U, hostname = H, servername = S, realname = R},
     {noreply, maybe_login(State#state{user = User})};
 handle_irc_message(#irc_message{command = "QUIT"}, State) ->
@@ -138,15 +140,15 @@ send(#state{sock = Sock, nick = Nick}, Message) ->
     ok = gen_tcp:send(Sock, Data),
     ok.
 
-% 
+%
 % Return ID of a client.
-% 
+%
 % This client ID is used for IRC prefixes.
 %
 user_mask(AgentPid) ->
     case ets:lookup(ircd_agents, AgentPid) of
-      [#irc_agent{pid = AgentPid, nick = Nick, user = #irc_user{username=User},
-          host = Host}] ->
-          io_lib:format("~s!~s@~s", [Nick, User, Host]);
+      [#irc_agent{pid = AgentPid, nick = Nick,
+		  user = #irc_user{username = User}, host = Host}] ->
+	  io_lib:format("~s!~s@~s", [Nick, User, Host]);
       [] -> throw(bad_agentpid)
     end.

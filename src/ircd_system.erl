@@ -33,11 +33,11 @@ init([]) ->
 handle_cast(_Msg, State) -> {noreply, State}.
 
 handle_call({login, [Nick, User, Host]}, {AgentPid, _AgentRef}, State) ->
-    ets:insert(ircd_agents, #irc_agent{pid = AgentPid, nick = Nick, user = User,
-        host = Host}),
+    ets:insert(ircd_agents,
+	       #irc_agent{pid = AgentPid, nick = Nick, user = User,
+			  host = Host}),
     {reply, ok, State};
-handle_call({nick_change, [Nick]}, _Caller, State) ->
-    {reply, Nick, State};
+handle_call({nick_change, [Nick]}, _Caller, State) -> {reply, Nick, State};
 handle_call({join, [Channels, _Keys]}, {AgentPid, _AgentRef}, State) ->
     case ets:lookup(ircd_agents, AgentPid) of
       [#irc_agent{pid = AgentPid, nick = Nick}] ->
@@ -67,8 +67,8 @@ handle_call({part, [Channels]}, {AgentPid, _AgentRef}, State) ->
     case ets:lookup(ircd_agents, AgentPid) of
       [#irc_agent{pid = AgentPid, nick = _Nick, user = _User}] ->
 	  _ = [begin
-		 Pid = get_channel(Channel), gen_server:call(Pid, {part,
-                         AgentPid})
+		 Pid = get_channel(Channel),
+		 gen_server:call(Pid, {part, AgentPid})
 	       end
 	       || Channel <- Channels, is_channel_name(Channel)],
 	  {reply, ok, State};
@@ -81,8 +81,8 @@ handle_info(_Msg, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 
 code_change(OldVsn, State, Extra) ->
-    error_logger:info_msg("code_change, oldvsn:~p state:~p extra:~p~n", [OldVsn,
-            State, Extra]),
+    error_logger:info_msg("code_change, oldvsn:~p state:~p extra:~p~n",
+			  [OldVsn, State, Extra]),
     {ok, State}.
 
 %% Private functions

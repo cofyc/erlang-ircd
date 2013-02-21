@@ -23,53 +23,54 @@
 
 %% gen_server state
 -record(state, {name, members_tabid}).
+
 -record(member, {agent_pid, agent_ref, agent_nick}).
 
 start_link(Args) -> gen_server:start_link(?MODULE, Args, []).
 
 init([Name]) ->
     error_logger:info_msg("[channel ~s] created.", [Name]),
-    {ok, #state{
-            name = Name,
-            members_tabid = ets:new(channel_members, [set, {keypos,
-                        #member.agent_pid}])
-        }
-    }.
+    {ok,
+     #state{name = Name,
+	    members_tabid =
+		ets:new(channel_members, [set, {keypos, #member.agent_pid}])}}.
 
 handle_cast(_Msg, State) -> {noreply, State}.
 
 handle_call({join, Nick, AgentPid}, _Caller,
 	    State = #state{members_tabid = MembersTabId}) ->
     Ref = erlang:monitor(process, AgentPid),
-    true = ets:insert(MembersTabId, #member{agent_pid = AgentPid, agent_ref =
-            Ref, agent_nick = Nick}),
+    true = ets:insert(MembersTabId,
+		      #member{agent_pid = AgentPid, agent_ref = Ref,
+			      agent_nick = Nick}),
     ok = broadcast(State, {join, AgentPid}),
     {reply, ok, State};
 handle_call({privmsg, AgentPid, Text}, _Caller, State = #state{}) ->
-    ok = broadcast(State, AgentPid, {privmsg, AgentPid, Text}), {reply, ok, State};
-handle_call({part, AgentPid}, _Caller, State = #state{members_tabid = MembersTabId}) ->
+    ok = broadcast(State, AgentPid, {privmsg, AgentPid, Text}),
+    {reply, ok, State};
+handle_call({part, AgentPid}, _Caller,
+	    State = #state{members_tabid = MembersTabId}) ->
     case ets:lookup(MembersTabId, AgentPid) of
       [#member{agent_pid = AgentPid, agent_ref = Ref}] ->
-          erlang:demonitor(Ref),
-          ets:delete(MembersTabId, AgentPid);
+	  erlang:demonitor(Ref), ets:delete(MembersTabId, AgentPid);
       [] -> throw(internal_error)
     end,
     ok = broadcast(State, {part, AgentPid}),
     {reply, ok, State};
-handle_call(info, _Caller, State = #state{name = Name, members_tabid =
-        MembersTabId}) ->
-    {reply, {Name, [Nick || #member{agent_nick = Nick} <-
-                ets:tab2list(MembersTabId)]}, State};
+handle_call(info, _Caller,
+	    State = #state{name = Name, members_tabid = MembersTabId}) ->
+    {reply,
+     {Name, [Nick || #member{agent_nick = Nick} <- ets:tab2list(MembersTabId)]},
+     State};
 handle_call(_Msg, _Caller, State) -> {reply, ok, State}.
 
 handle_info({'DOWN', Ref, process, Pid, _ExitReason},
 	    State = #state{name = Name, members_tabid = MembersTabId}) ->
-    error_logger:info_msg("[channel ~s] ~p agent exit, ref: ~p~n", [Name, Pid,
-            Ref]),
+    error_logger:info_msg("[channel ~s] ~p agent exit, ref: ~p~n",
+			  [Name, Pid, Ref]),
     case ets:lookup(MembersTabId, Pid) of
       [#member{agent_pid = AgentPid, agent_ref = Ref}] ->
-          erlang:demonitor(Ref),
-          ets:delete(MembersTabId, AgentPid);
+	  erlang:demonitor(Ref), ets:delete(MembersTabId, AgentPid);
       [] -> throw(internal_error)
     end,
     {noreply, State};
@@ -88,8 +89,8 @@ code_change(_OldVersion, State, _Extra) -> {ok, State}.
 broadcast(#state{name = Name, members_tabid = MembersTabId}, Event) ->
     Message = {channel_event, Name, Event},
     error_logger:info_msg("[channel ~s] broadcast: ~p~n", [Name, Message]),
-    _ = [ gen_server:cast(Pid, Message) || #member{agent_pid = Pid} <-
-        ets:tab2list(MembersTabId)],
+    _ = [gen_server:cast(Pid, Message)
+	 || #member{agent_pid = Pid} <- ets:tab2list(MembersTabId)],
     ok.
 
 % broadcast/3
@@ -98,8 +99,9 @@ broadcast(#state{name = Name, members_tabid = MembersTabId}, Event) ->
 %
 broadcast(#state{name = Name, members_tabid = MembersTabId}, AgentPid, Event) ->
     Message = {channel_event, Name, Event},
-    error_logger:info_msg("[channel ~s] broadcast (except ~p): ~p~n", [Name,
-            AgentPid, Message]),
+    error_logger:info_msg("[channel ~s] broadcast (except ~p): ~p~n",
+			  [Name, AgentPid, Message]),
     _ = [gen_server:cast(Pid, Message)
-	 || #member{agent_pid = Pid} <- ets:tab2list(MembersTabId), AgentPid =/= Pid],
+	 || #member{agent_pid = Pid} <- ets:tab2list(MembersTabId),
+	    AgentPid =/= Pid],
     ok.
