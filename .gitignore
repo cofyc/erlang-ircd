@@ -1,4 +1,5 @@
 *.beam
 /rel/ircd
+/rel/ircd-*
 /ebin/*.app
 /.eunit

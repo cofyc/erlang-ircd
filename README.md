@@ -31,6 +31,13 @@ Before committing:
 - Run `make xref` to check for [xref](http://www.erlang.org/doc/man/xref.html).
 - Run `make dialyzer` to check [Dialyzer](http://www.erlang.org/doc/man/dialyzer.html) warnings.
 
+Deployment
+==========
+
+### How to upgrade
+
+See https://github.com/basho/rebar/wiki/Upgrades.
+
 References
 ==========
 

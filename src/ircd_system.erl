@@ -80,7 +80,10 @@ handle_info(_Msg, State) -> {noreply, State}.
 
 terminate(_Reason, _State) -> ok.
 
-code_change(_OldVersion, State, _Extra) -> {ok, State}.
+code_change(OldVsn, State, Extra) ->
+    error_logger:info_msg("code_change, oldvsn:~p state:~p extra:~p~n", [OldVsn,
+            State, Extra]),
+    {ok, State}.
 
 %% Private functions
 
