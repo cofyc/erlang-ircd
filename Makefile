@@ -9,8 +9,11 @@ deps:
 clean:
 	rebar clean
 
-run: rel
-	./rel/ircd/bin/ircd console
+run: all
+	@erlc run.erl
+	@erl -pa ebin/ -s run start ircd
+	@rm *.beam
+	
 
 xref: clean all
 	rebar xref

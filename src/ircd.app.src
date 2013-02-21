@@ -8,5 +8,11 @@
                   stdlib
                  ]},
   {mod, { ircd_app, []}},
-  {env, []}
+  {env, 
+      [ {host, '0.0.0.0'} % '0.0.0.0' means any IPv4 host
+      , {port, 6667}
+      , {server, "Erlang IRCd by Cofyc."}
+      , {description, "View my project here: https://github.com/Cofyc/erlang-ircd."}
+      ]
+  }
  ]}.
