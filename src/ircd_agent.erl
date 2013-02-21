@@ -102,6 +102,10 @@ handle_irc_message(#irc_message{command = "PRIVMSG", params = [Targets],
 handle_irc_message(#irc_message{command = "PART", params = [ChannelString]},
 		   State) ->
     {noreply, call_system1(State, part, [string:tokens(ChannelString, ",")])};
+handle_irc_message(#irc_message{command = "MODE", params = [GivenNick, Mode]},
+    State = #state{user=User, nick=Nick}) when Nick =:= GivenNick  ->
+    NewUser = User#irc_user{mode=Mode},
+    {noreply, State#state{user=NewUser}};
 handle_irc_message(Msg, State) ->
     error_logger:info_report({ignored_message, Msg}), {noreply, State}.
 

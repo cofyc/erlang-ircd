@@ -22,7 +22,7 @@ dialyzer: clean all
 	dialyzer -q -n ebin -Wunmatched_returns -Werror_handling \
 	        -Wrace_conditions
 
-test:
+test: all
 	rebar eunit
 
 tidy:
