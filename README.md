@@ -3,6 +3,8 @@ Erlang IRCd
 
 Yet another IRC daemon service that implements the IRC protocol, enabling people to talk to each other via the Internet (exchanging textual messages in real time).
 
+This project is originally based on this [erlang-ircd](https://github.com/tonyg/erlang-ircd) project.
+
 > Disclaimer: I wrote this only for learning purpose, it's not producation ready now.
 
 How to use
