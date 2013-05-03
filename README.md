@@ -43,6 +43,7 @@ See https://github.com/basho/rebar/wiki/Upgrades.
 References
 ==========
 
+- http://learnyousomeerlang.com/
 - https://github.com/rebar/rebar
 - https://github.com/tonyg/erlang-ircd
 - http://ngircd.barton.de/index.php.en
