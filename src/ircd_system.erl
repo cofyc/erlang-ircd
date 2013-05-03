@@ -26,7 +26,8 @@
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-    _ = ets:new(ircd_agents, [set, public, named_table, {keypos, #irc_agent.pid}]),
+    _ = ets:new(ircd_agents,
+		[set, public, named_table, {keypos, #irc_agent.pid}]),
     _ = ets:new(ircd_channels, [set, named_table]),
     {ok, #state{}}.
 

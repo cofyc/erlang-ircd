@@ -12,7 +12,9 @@
 
 %% Test
 -ifdef(TEST).
+
 -include_lib("eunit/include/eunit.hrl").
+
 -endif.
 
 %% ===================================================================
@@ -25,9 +27,5 @@ stop(_State) -> ok.
 
 %% Test
 -ifdef(TEST).
-
-simple_test() ->
-    ok = application:start(ircd),
-    ?assertNot(undefined == whereis(ircd_sup)).
 
 -endif.
